@@ -68,12 +68,14 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
                             sdo<=a_shift[a_width-1];
                             a_shift<={a_shift[a_width-2:0],1'b0};
                             count<=count-1;
-                        if(count==1)begin
+                        if(count==0 && r_w)begin
                             if(r_w) begin
+                                drive<=0;
+                                d_shift<=0;
                                 count<=d_width;
                                 state<=rd_data;
                             end
-                            else begin
+                        if(count==1 && !r_w)begin
                                 d_shift<=w_data;
                                 count<=d_width;
                                 state<=wr_data;
@@ -105,7 +107,7 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
                         d_shift<={d_shift[d_width-2:0],sdi};
                         count<=count-1;
                             
-                        if(count==1)begin
+                        if(count==0)begin
                             r_data<=d_shift;
                             count<=0;
                             cs<=1;
