@@ -5,13 +5,13 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
     output reg [d_width-1:0]r_data;
     output reg sclk,cs;
     inout sdio;
-   
+    
     reg [a_width-1:0]a_shift;
     reg [d_width-1:0]d_shift;
     reg [a_width-1:0]count;
-   
+    
     reg [2:0]state;
-   
+    
     localparam idle=0,
                inst_rw=1,
                wr_addr=2,
@@ -20,10 +20,10 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
                
     reg drive,sdo;
     wire sdi;
-   
+    
     assign sdio=drive?sdo:1'bz;
     assign sdi=sdio;
-   
+    
     always @(posedge clk or posedge rst) begin
         if(rst) begin
             count<=0;
@@ -43,7 +43,7 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
                     cs<=1;
                     drive<=0;
                     count<=0;
-                   
+                    
                     if(start) begin
                         cs<=0;
                         drive<=1;
@@ -52,16 +52,16 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
                         state<=inst_rw;
                     end
                 end
-               
+                
                 inst_rw:begin
                     sclk<=~sclk;
                     if(sclk==0)begin
-                        sdo<=!r_w;
+                        sdo<=r_w;
                         count<=a_width;
                         state<=wr_addr;
                     end
                 end
-               
+                
                 wr_addr: begin
                     sclk<=~sclk;
                         if(sclk==0) begin
@@ -70,12 +70,10 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
                             count<=count-1;
                         if(count==1)begin
                             if(r_w) begin
-                                drive<=0;
                                 count<=d_width;
                                 state<=rd_data;
                             end
                             else begin
-                                drive<=1;
                                 d_shift<=w_data;
                                 count<=d_width;
                                 state<=wr_data;
@@ -83,7 +81,7 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
                         end
                     end    
                 end
-               
+                
                 wr_data: begin
                     sclk<=~sclk;
                     if(sclk==0) begin
@@ -99,15 +97,16 @@ module spi_mt #(parameter a_width=8,d_width=16)(clk,rst,start,r_w,w_addr,w_data,
                         end
                     end
                 end
-               
+                
                 rd_data:begin
                     sclk<=~sclk;
+                    drive<=0;
                     if(sclk==1)begin
                         d_shift<={d_shift[d_width-2:0],sdi};
                         count<=count-1;
-                           
+                            
                         if(count==1)begin
-                            r_data<={d_shift[d_width-2:0],sdi};
+                            r_data<=d_shift;
                             count<=0;
                             cs<=1;
                             sclk<=0;
